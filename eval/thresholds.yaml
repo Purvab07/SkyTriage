@@ -1,0 +1,14 @@
+# Minimum scores. CI fails if any metric drops below its floor.
+# Fill in real numbers once the baselines exist.
+classifier:
+  macro_f1: null
+  ece_max: 0.05
+conformal:
+  coverage_min: 0.88
+retrieval:
+  recall_at_10: null
+ads:
+  recall_min: 0.95
+  precision_min: 0.80
+faithfulness:
+  supported_claim_rate_min: 0.95
