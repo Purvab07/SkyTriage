@@ -8,3 +8,10 @@ def test_health() -> None:
     response = client.get("/v1/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_root_points_to_docs() -> None:
+    client = TestClient(app)
+    body = client.get("/").json()
+    assert body["name"] == "SkyTriage"
+    assert body["docs"] == "/docs"
