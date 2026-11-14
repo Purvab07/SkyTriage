@@ -26,3 +26,4 @@ mlruns/
 # Frontend
 node_modules/
 .next/
+.coverage

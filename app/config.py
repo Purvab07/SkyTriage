@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = ""
     cascade_confidence_threshold: float = 0.85
+    models_dir: str = "models"
 
 
 settings = Settings()

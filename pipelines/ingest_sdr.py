@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import Engine
+from sqlalchemy import Engine, Table
 from sqlalchemy.dialects.postgresql import insert
 
 from app.db.models import Base, SDRReport
@@ -57,25 +57,28 @@ def save_files(clean: pd.DataFrame, rejected: pd.DataFrame, out_dir: Path) -> No
     log.info("Saved %s and %s", out_dir / "sdr.parquet", out_dir / "sdr_rejected.csv")
 
 
-def to_records(df: pd.DataFrame) -> list[dict]:
+def to_records(df: pd.DataFrame, table: Table = SDRReport.__table__) -> list[dict]:
     """Turn a DataFrame into plain dicts, with every kind of missing value as None."""
-    columns = [c.name for c in SDRReport.__table__.columns if c.name in df.columns]
+    columns = [c.name for c in table.columns if c.name in df.columns]
     obj = df[columns].astype(object)
     return obj.where(obj.notna(), None).to_dict("records")
 
 
-def load_to_db(clean: pd.DataFrame, engine: Engine) -> int:
-    """Insert rows in batches; rows whose control_number already exists are skipped."""
-    Base.metadata.create_all(engine, tables=[SDRReport.__table__])
-    records = to_records(clean)
+def load_to_db(clean: pd.DataFrame, engine: Engine, table: Table = SDRReport.__table__) -> int:
+    """Insert rows in batches; rows whose control_number already exists are skipped.
+
+    `table` defaults to the real sdr_reports table; tests pass a throwaway copy.
+    """
+    Base.metadata.create_all(engine, tables=[table])
+    records = to_records(clean, table)
     inserted = 0
     with engine.begin() as conn:
         for start in range(0, len(records), BATCH_SIZE):
             batch = records[start : start + BATCH_SIZE]
             stmt = (
-                insert(SDRReport)
+                insert(table)
                 .on_conflict_do_nothing(index_elements=["control_number"])
-                .returning(SDRReport.control_number)
+                .returning(table.c.control_number)
             )
             inserted += len(conn.execute(stmt, batch).all())
     return inserted
